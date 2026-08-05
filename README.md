@@ -1,6 +1,6 @@
 # Customer Churn Model Serving — Zero to Production-Oriented Deployment
 
-A complete, beginner-friendly reference project for teaching how a trained machine-learning model becomes a prediction API and is then deployed through increasingly capable environments:
+A complete, beginner-friendly reference project on how a trained machine-learning model becomes a prediction API and is then deployed through increasingly capable environments:
 
 ```text
 Standalone model artifact
