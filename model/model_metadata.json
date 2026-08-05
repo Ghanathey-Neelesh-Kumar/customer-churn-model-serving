@@ -1,0 +1,20 @@
+{
+  "model_name": "customer-churn-classifier",
+  "model_version": "1.0.0",
+  "algorithm": "LogisticRegression",
+  "target": "churn",
+  "features": [
+    "tenure_months",
+    "monthly_charges",
+    "support_calls",
+    "contract_type",
+    "internet_service",
+    "payment_method"
+  ],
+  "trained_at_utc": "2026-08-05T18:55:26.141172+00:00",
+  "training_rows": 2400,
+  "test_rows": 600,
+  "scikit_learn_version": "1.8.0",
+  "artifact_sha256": "0ded8da04562d4527571e4bfcf493bce557ee85ee395caf9340d9d3ed0c1c023",
+  "educational_use_only": true
+}

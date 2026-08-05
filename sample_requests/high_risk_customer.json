@@ -1,0 +1,8 @@
+{
+  "tenure_months": 3,
+  "monthly_charges": 105.0,
+  "support_calls": 8,
+  "contract_type": "Month-to-month",
+  "internet_service": "Fiber optic",
+  "payment_method": "Electronic check"
+}

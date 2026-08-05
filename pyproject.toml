@@ -1,0 +1,16 @@
+[project]
+name = "customer-churn-model-serving"
+version = "1.0.0"
+description = "Educational FastAPI model-serving project"
+requires-python = ">=3.12,<3.14"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["data", "model"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B"]

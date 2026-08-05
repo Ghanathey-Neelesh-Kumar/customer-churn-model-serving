@@ -1,0 +1,21 @@
+[Unit]
+Description=Customer Churn FastAPI Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/customer-churn-model-serving
+EnvironmentFile=-/opt/customer-churn-model-serving/.env
+ExecStart=/opt/customer-churn-model-serving/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/opt/customer-churn-model-serving
+
+[Install]
+WantedBy=multi-user.target

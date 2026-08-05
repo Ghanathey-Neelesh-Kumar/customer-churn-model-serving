@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: customer-churn-api-config
+  namespace: churn-serving
+data:
+  APP_NAME: "Customer Churn Prediction API"
+  APP_VERSION: "1.0.0"
+  LOG_LEVEL: "INFO"
+  MEDIUM_RISK_THRESHOLD: "0.40"
+  HIGH_RISK_THRESHOLD: "0.70"
