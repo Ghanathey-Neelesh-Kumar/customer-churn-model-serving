@@ -114,9 +114,17 @@ def model_info(request: Request) -> ModelInfoResponse:
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Inference"])
 def predict(customer: CustomerFeatures, request: Request) -> PredictionResponse:
-    loaded_model: LoadedModel | None = getattr(request.app.state, "loaded_model", None)
+    loaded_model: LoadedModel | None = getattr(
+        request.app.state,
+        "loaded_model",
+        None,
+    )
+
     if loaded_model is None:
-        raise HTTPException(status_code=503, detail="Model is not loaded")
+        raise HTTPException(
+            status_code=503,
+            detail="Model is not loaded",
+        )
 
     result = predict_customer(
         loaded_model,
@@ -124,7 +132,9 @@ def predict(customer: CustomerFeatures, request: Request) -> PredictionResponse:
         settings.medium_risk_threshold,
         settings.high_risk_threshold,
     )
-    request_id = request.headers.get("X-Request-ID", str(uuid4()))
+
+    request_id = request.state.request_id
+
     return PredictionResponse(
         request_id=request_id,
         prediction=result["prediction"],
@@ -133,3 +143,4 @@ def predict(customer: CustomerFeatures, request: Request) -> PredictionResponse:
         model_name=loaded_model.metadata["model_name"],
         model_version=loaded_model.metadata["model_version"],
     )
+   
