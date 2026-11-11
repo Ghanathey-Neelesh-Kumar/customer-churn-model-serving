@@ -17,6 +17,7 @@ docs/LECTURE_MAP.md
 docs/TROUBLESHOOTING.md
 kubernetes/configmap.yaml
 kubernetes/deployment.yaml
+kubernetes/gateway/gatewayclass.yaml
 kubernetes/gateway/gateway.yaml
 kubernetes/gateway/httproute.yaml
 kubernetes/hpa.yaml
