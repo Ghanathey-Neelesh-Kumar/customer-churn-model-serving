@@ -35,8 +35,8 @@ By completing the repository in order, students will learn to:
 5. Add health, readiness and model-information endpoints.
 6. Test valid, invalid, high-risk and low-risk requests.
 7. Run the service locally with Uvicorn.
-8. Deploy the service to a Linux virtual machine with `systemd` and Nginx.
-9. Expose the VM-hosted API through Nginx.
+8. Run the API as a Linux service with `systemd`.
+9. Expose the API through Nginx.
 10. Build a secure, non-root Docker image.
 11. Push the image to Amazon ECR.
 12. Deploy the image to Kubernetes.
@@ -127,6 +127,13 @@ customer-churn-model-serving/
 - `kubectl` and a Kubernetes cluster for Kubernetes lectures
 
 The local FastAPI lessons require only Python.
+
+## Clone the repository
+
+```bash
+git clone https://github.com/Ghanathey-Neelesh-Kumar/customer-churn-model-serving.git
+cd customer-churn-model-serving
+```
 
 ---
 
