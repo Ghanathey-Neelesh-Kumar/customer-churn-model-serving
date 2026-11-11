@@ -4,8 +4,7 @@ metadata:
   name: churn-api-gateway
   namespace: churn-serving
 spec:
-  # Replace with the GatewayClass installed in your environment.
-  gatewayClassName: <GATEWAY_CLASS_NAME>
+  gatewayClassName: eg
   listeners:
     - name: http
       protocol: HTTP
