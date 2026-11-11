@@ -36,7 +36,7 @@ By completing the repository in order, students will learn to:
 6. Test valid, invalid, high-risk and low-risk requests.
 7. Run the service locally with Uvicorn.
 8. Deploy the service to a Linux virtual machine with `systemd` and Nginx.
-9. Automate virtual-machine bootstrap with a user-data script.
+9. Expose the VM-hosted API through Nginx.
 10. Build a secure, non-root Docker image.
 11. Push the image to Amazon ECR.
 12. Deploy the image to Kubernetes.
@@ -394,12 +394,6 @@ The image:
 - starts one Uvicorn process per container;
 - uses environment-based configuration.
 
-Local Compose:
-
-```bash
-docker compose up --build
-```
-
 ---
 
 # Part 7 — Push to Amazon ECR
@@ -503,65 +497,106 @@ The Deployment includes:
 
 ---
 
-# Part 9 — Gateway API
+# Part 9 — Rolling update and rollback
 
-Gateway API requires a compatible controller. Install the controller recommended for your Kubernetes environment, then adapt the GatewayClass name in:
+The Deployment already uses a `RollingUpdate` strategy. For the course's local kind lab, build the new image, tag it with the exact image reference used by the Deployment, and load it into kind before changing the Deployment image.
 
-```text
-kubernetes/gateway/gateway.yaml
-```
-
-Apply:
+Example for a private ECR-style image reference:
 
 ```bash
-kubectl apply -f kubernetes/gateway/gateway.yaml
-kubectl apply -f kubernetes/gateway/httproute.yaml
+docker build -t customer-churn-api:1.1.0 .
+docker tag customer-churn-api:1.1.0 <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/customer-churn-api:1.1.0
+kind load docker-image <ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/customer-churn-api:1.1.0 --name churn-serving
 ```
 
-Inspect:
-
-```bash
-kubectl get gateway,httproute -n churn-serving
-```
-
-The repository intentionally does not assume a specific controller because kind, EKS, GKE and AKS use different installation paths.
-
----
-
-# Part 10 — Rolling update and rollback
+The image reference passed to `kubectl set image` must exactly match the image tag loaded into kind. The Deployment uses `imagePullPolicy: IfNotPresent` for this local demonstration.
 
 Update the image:
 
 ```bash
 kubectl set image \
   deployment/customer-churn-api \
-  api=<REGISTRY>/customer-churn-api:1.1.0 \
+  api=<ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/customer-churn-api:1.1.0 \
   -n churn-serving
 ```
 
 Watch the rollout:
 
 ```bash
-kubectl rollout status \
-  deployment/customer-churn-api \
-  -n churn-serving
+kubectl rollout status deployment/customer-churn-api -n churn-serving
+kubectl get pods -n churn-serving
 ```
 
-View history:
+View revision history:
 
 ```bash
-kubectl rollout history \
-  deployment/customer-churn-api \
-  -n churn-serving
+kubectl rollout history deployment/customer-churn-api -n churn-serving
 ```
 
 Rollback:
 
 ```bash
-kubectl rollout undo \
-  deployment/customer-churn-api \
-  -n churn-serving
+kubectl rollout undo deployment/customer-churn-api -n churn-serving
+kubectl rollout status deployment/customer-churn-api -n churn-serving
 ```
+
+---
+
+# Part 10 — Gateway API
+
+The course lab uses **Envoy Gateway** with the local kind cluster. Install the Gateway API standard CRDs first, then the Envoy Gateway controller.
+
+### Install Gateway API CRDs
+
+```bash
+VERSION="v1.6.2"
+kubectl apply --server-side -f "https://github.com/kubernetes-sigs/gateway-api/releases/download/${VERSION}/standard-install.yaml"
+```
+
+### Install Envoy Gateway
+
+```bash
+helm install eg oci://docker.io/envoyproxy/gateway-helm \
+  --version v1.9.1 \
+  -n envoy-gateway-system \
+  --create-namespace
+
+kubectl wait --timeout=5m -n envoy-gateway-system deployment/envoy-gateway --for=condition=Available
+```
+
+### Apply the Gateway resources
+
+The repository includes the `GatewayClass` used in the course lab:
+
+```bash
+kubectl apply -f kubernetes/gateway/gatewayclass.yaml
+kubectl apply -f kubernetes/gateway/gateway.yaml
+kubectl apply -f kubernetes/gateway/httproute.yaml
+```
+
+Inspect the resources:
+
+```bash
+kubectl get gatewayclass
+kubectl get gateway,httproute -n churn-serving
+kubectl get svc -n envoy-gateway-system
+```
+
+On kind, the generated Envoy proxy Service can be tested with port-forwarding. Use the Service name shown by the previous command:
+
+```bash
+kubectl port-forward -n envoy-gateway-system service/<ENVOY-PROXY-SERVICE> 8080:80
+```
+
+In another terminal, test the route:
+
+```bash
+curl http://127.0.0.1:8080/health
+curl http://127.0.0.1:8080/ready
+python scripts/test_api.py --base-url http://127.0.0.1:8080
+```
+
+For EKS, GKE, AKS or another cluster, install a compatible Gateway API controller and adapt the GatewayClass and exposure method to that environment.
 
 ---
 
@@ -571,45 +606,48 @@ The repository supports the course sequence below.
 
 ## Section 6 — Foundations and local serving
 
-1. Introduction to model deployment and serving
-2. Deployment vs serving vs inference
-3. Online, batch, asynchronous and streaming inference
-4. Production prediction request flow
-5. Project and repository walkthrough
-6. Preparing and validating the model artifact
-7. Building the FastAPI prediction service
-8. Testing health, readiness, validation and predictions
+1. What is Model Deployment and Model Serving?
+2. Model Deployment vs Model Serving vs Inference
+3. Online, Batch, Asynchronous and Streaming Inference
+4. How a Production Prediction Request Flows
+5. Customer Churn Model Serving Project — Setup and Repository Walkthrough
+6. Preparing and Validating the Model Artifact
+7. Building the FastAPI Prediction Service
+8. Running and Testing the Prediction Service Locally
 
-## Section 7 — Virtual machine
+## Section 7 — Virtual-machine model serving
 
-1. VM serving architecture
-2. Preparing the application
-3. EC2, IAM and security groups
-4. `systemd` deployment
-5. Nginx and end-to-end testing
-6. User-data automation
-7. Updates, rollback, troubleshooting and cleanup
+1. Virtual-Machine Model Serving Architecture
+2. Creating and Connecting to an Amazon EC2 Instance
+3. Deploying the Customer Churn Prediction Service to EC2
+4. Running the Prediction API as a Linux Service with systemd
+5. Exposing the Prediction API with Nginx
+6. Testing and Troubleshooting the Complete VM Deployment
+7. Cleaning Up the EC2 Deployment and Section Recap
 
-## Section 8 — Containers
+## Section 8 — Containerising the model-serving application
 
-1. Why containers
-2. Production-oriented Dockerfile
-3. Build and local testing
-4. Security, configuration and health checks
-5. Push to ECR
-6. Versioning, troubleshooting and cleanup
+1. Why Containers Are Used for Model Serving
+2. Containerizing the Customer Churn Prediction Service
+3. Building and Running the Docker Container Locally
+4. Testing the Containerized Prediction API
+5. Creating an Amazon ECR Repository
+6. Tagging and Pushing the Docker Image to Amazon ECR
+7. Section 8 Recap and Preparing for Kubernetes
 
-## Section 9 — Kubernetes
+## Section 9 — Kubernetes model serving
 
-1. Serving architecture
-2. Cluster and namespace
-3. ConfigMaps, Secrets and registry access
-4. Deployment and Service manifests
-5. Probes
-6. Deployment and testing
-7. Scaling and HPA
-8. Gateway API
-9. Rolling updates, rollback and cleanup
+1. Why Kubernetes? From One Container to a Managed Application
+2. Kubernetes Architecture — Control Plane and Worker Nodes
+3. Kubernetes Model Serving Architecture — Pods, Deployments and Services
+4. Creating the Kubernetes Cluster and Namespace
+5. Deploying the Customer Churn API to Kubernetes
+6. Keeping the Prediction Service Healthy with Kubernetes Probes
+7. Exposing and Testing the Prediction Service with a Kubernetes Service
+8. Scaling the Prediction API — Replicas and Automatic Scaling
+9. Updating the Model Serving Application Without Downtime
+10. Exposing the Prediction API with Kubernetes Gateway API
+11. Section 9 Conclusion — From Container to Kubernetes Platform
 
 A more detailed instructor mapping is available in `docs/LECTURE_MAP.md`.
 
